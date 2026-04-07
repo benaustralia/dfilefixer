@@ -360,57 +360,32 @@ async function processBatch() {
 window.queueFile = queueFile;
 window.flashSuccess = flashSuccess;
 
-// ---------- Tractor positioner ----------
-// Centers the phrase [tractor][space]Diane's File Fixer on the upper arc by
-// measuring the rendered text along the curved path. Must run after Orbitron
-// has loaded, otherwise getComputedTextLength returns 0.
-async function positionTractor() {
-  try { await document.fonts.ready; } catch {}
+// Center [tractor][space]Diane's File Fixer on the upper arc after Orbitron
+// loads, then push the tractor 8 user-units radially outward (arc radius 175,
+// centered at 260,260) so its wheels clear the drop-zone rim.
+document.fonts.ready.then(() => {
   const path = document.getElementById("title-arc");
-  const textEl = document.querySelector(".h1-curve text");
-  const textPath = document.querySelector(".h1-curve textPath");
-  const tractor = document.querySelector(".h1-curve .tractor");
-  if (!path || !textEl || !textPath || !tractor) return;
+  const text = document.querySelector(".h1-curve text");
+  const textLen = text.getComputedTextLength();
+  if (!textLen) return;
 
-  const arcLen = path.getTotalLength();
-  const textLen = textEl.getComputedTextLength();
-  if (!textLen) return; // font failed; keep the hardcoded transform
+  const a = text.getStartPositionOfChar(7), b = text.getStartPositionOfChar(8);
+  const spaceW = Math.hypot(b.x - a.x, b.y - a.y);
+  const TRACTOR_W = 38; // 40-unit artwork * scale(0.95)
+  const start = (path.getTotalLength() - TRACTOR_W - spaceW - textLen) / 2;
 
-  // "Diane's File Fixer": index 7 is the space between "Diane's" and "File".
-  let spaceWidth = 8;
-  try {
-    const p7 = textEl.getStartPositionOfChar(7);
-    const p8 = textEl.getStartPositionOfChar(8);
-    spaceWidth = Math.hypot(p8.x - p7.x, p8.y - p7.y);
-  } catch {}
+  text.querySelector("textPath").setAttribute(
+    "startOffset", start + TRACTOR_W + spaceW + textLen / 2);
 
-  const tractorWidth = 38; // 40 user-unit artwork * scale(0.95)
-  const phraseLen = tractorWidth + spaceWidth + textLen;
-  const phraseStart = arcLen / 2 - phraseLen / 2;
-  const tractorMid = phraseStart + tractorWidth / 2;
-  const textStart = phraseStart + tractorWidth + spaceWidth;
-  const textMid = textStart + textLen / 2;
+  const p = path.getPointAtLength(start + TRACTOR_W / 2);
+  const q = path.getPointAtLength(start + TRACTOR_W / 2 + 1);
+  const angle = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+  const k = 1 + 8 / 175;
+  const x = 260 + (p.x - 260) * k, y = 260 + (p.y - 260) * k;
 
-  textPath.setAttribute("startOffset", String(textMid));
-
-  const p = path.getPointAtLength(tractorMid);
-  const pNext = path.getPointAtLength(Math.min(tractorMid + 1, arcLen));
-  const angleDeg = Math.atan2(pNext.y - p.y, pNext.x - p.x) * 180 / Math.PI;
-
-  // Push the tractor radially outward from the drop-zone center (260,260) so
-  // its wheels clear the dotted drop-zone rim.
-  const RADIAL_OFFSET = 8;
-  const nx = (p.x - 260) / 175;
-  const ny = (p.y - 260) / 175;
-  const tx = p.x + nx * RADIAL_OFFSET;
-  const ty = p.y + ny * RADIAL_OFFSET;
-
-  tractor.setAttribute(
-    "transform",
-    `translate(${tx} ${ty}) rotate(${angleDeg}) translate(-32 -32) scale(0.95)`
-  );
-}
-positionTractor();
+  document.querySelector(".h1-curve .tractor").setAttribute(
+    "transform", `translate(${x} ${y}) rotate(${angle}) translate(-32 -32) scale(0.95)`);
+});
 </script>
 <script src="filepond-init.js" defer></script>
 </body>
