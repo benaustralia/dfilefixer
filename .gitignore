@@ -1,0 +1,6 @@
+.DS_Store
+.playwright-mcp/
+*.log
+viewport-*.png
+tractor-*.png
+standalone-*.png

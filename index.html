@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e02418">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<title>Diane's File Fixer</title>
+
+<!-- FilePond: professional drop zone component -->
+<link rel="stylesheet" href="https://unpkg.com/filepond@^4/dist/filepond.min.css">
+<link rel="stylesheet" href="filepond-init.css">
+<script src="https://unpkg.com/filepond@^4/dist/filepond.min.js"></script>
+
+<!-- Futuristic display font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap">
+
+<style>
+  :root {
+    --card: min(520px, 92vmin);
+    --bg: #0f1115;
+    --panel: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.14);
+    --border-strong: rgba(255,255,255,0.32);
+    --accent: #e02418;
+    --accent-soft: rgba(224,36,24,0.10);
+    --text: #f3f5f8;
+    --muted: #9aa3b2;
+    --green: #34c759;
+    --orange: #ff9f0a;
+    --red: #ff453a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f8fa;
+      --panel: rgba(0,0,0,0.03);
+      --border: rgba(0,0,0,0.12);
+      --border-strong: rgba(0,0,0,0.32);
+      --text: #0f1115;
+      --muted: #5b6472;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    position: relative;
+    min-height: 100vh;
+    background-color: #000;
+    background-image: radial-gradient(circle at center,
+      #e02418 0,
+      #e02418 calc(var(--card) / 4),
+      #a0140d calc(var(--card) / 4),
+      #a0140d calc(var(--card) / 2),
+      #6b0e0a calc(var(--card) / 2),
+      #6b0e0a calc(var(--card) * 3 / 4),
+      #3d0808 calc(var(--card) * 3 / 4),
+      #3d0808 var(--card),
+      #1a0303 var(--card),
+      #1a0303 calc(var(--card) * 5 / 4),
+      #000 calc(var(--card) * 5 / 4)
+    );
+    background-attachment: fixed;
+  }
+  /* Narrow portrait viewports (mobile) get a vertically elongated bullseye so
+     the rings hug the tall shape. Half-screen desktop (e.g. 960×1080) stays
+     circular — the card-anchored radial-gradient already keeps it proportional. */
+  @media (max-aspect-ratio: 3/4) {
+    body {
+      background-image: radial-gradient(ellipse 70% 50% at center,
+        #e02418 0,
+        #e02418 calc(var(--card) / 4),
+        #a0140d calc(var(--card) / 4),
+        #a0140d calc(var(--card) / 2),
+        #6b0e0a calc(var(--card) / 2),
+        #6b0e0a calc(var(--card) * 3 / 4),
+        #3d0808 calc(var(--card) * 3 / 4),
+        #3d0808 var(--card),
+        #1a0303 var(--card),
+        #1a0303 calc(var(--card) * 5 / 4),
+        #000 calc(var(--card) * 5 / 4)
+      );
+    }
+  }
+  .card { position: relative; z-index: 1; }
+  .credit {
+    position: fixed;
+    bottom: 10px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-size: 10px; color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+  .credit:hover { color: rgba(255,255,255,0.95); }
+  .card {
+    width: var(--card);
+    height: var(--card);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 50%;
+    padding: 0;
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    box-shadow: 0 20px 80px -10px rgba(0,0,0,0.7),
+                0 0 0 1px rgba(255,255,255,0.05) inset;
+    color: #0f1115;
+    overflow: hidden;
+    /* Geometric centering: drop zone sits at the exact center of the circle */
+  }
+  /* Both the H1 and the drop zone are absolutely centered on the card.
+     The H1 SVG is the same size as the card and contains a half-circle arc
+     concentric with the drop zone — text wraps around the drop zone perimeter
+     like a vinyl record label. */
+  .card > h1,
+  .card > .filepond--root {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .card > h1 {
+    width: var(--card);
+    height: var(--card);
+    pointer-events: none;
+  }
+  h1 {
+    margin: 0; padding: 0;
+    display: block;
+    line-height: 0;
+  }
+  .h1-curve {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+  .h1-curve text {
+    font-family: "Orbitron", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    fill: #0f1115;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+  <a class="credit" href="https://www.svgbackgrounds.com/" target="_blank" rel="noopener">Bullseye Gradient by SVGBackgrounds.com</a>
+
+  <div class="card">
+    <h1>
+      <svg class="h1-curve" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg" aria-label="Diane's File Fixer">
+        <defs>
+          <!-- Half-circle arc concentric with drop zone (cx=260, cy=260) at radius 175.
+               Drop zone radius is 140; the title sits in a 35px-wide ring around it. -->
+          <path id="title-arc" d="M 85 260 A 175 175 0 0 1 435 260" fill="none"/>
+        </defs>
+
+        <!-- Tractor outer transform is set at runtime by the positioner so the phrase
+             [tractor][space]Diane's File Fixer is mathematically centered on the arc.
+             Inner translate(-32 -32) scale(0.95) is locked artwork — do not touch. -->
+        <g class="tractor" transform="translate(97.4 195.0) rotate(-68) translate(-32 -32) scale(0.95)" aria-hidden="true">
+          <rect x="17" y="12" width="4" height="12" rx="0.5" fill="#8a1a14"/>
+          <rect x="20" y="16" width="16" height="14" rx="2" fill="#e02418"/>
+          <rect x="22" y="18" width="12" height="9" rx="1" fill="#ffe9a8" opacity="0.9"/>
+          <rect x="14" y="28" width="40" height="14" rx="3" fill="#e02418"/>
+          <rect x="40" y="22" width="14" height="10" rx="2" fill="#c41a10"/>
+          <circle cx="52" cy="27" r="1.6" fill="#ffe9a8"/>
+          <circle cx="20" cy="46" r="11" fill="#1a1a1a"/>
+          <circle cx="20" cy="46" r="5" fill="#e02418"/>
+          <circle cx="20" cy="46" r="1.6" fill="#1a1a1a"/>
+          <circle cx="48" cy="48" r="7" fill="#1a1a1a"/>
+          <circle cx="48" cy="48" r="3" fill="#e02418"/>
+          <circle cx="48" cy="48" r="1" fill="#1a1a1a"/>
+        </g>
+
+        <!-- Curved title text wraps around the upper half of the drop zone.
+             startOffset is overwritten by the positioner once Orbitron has loaded. -->
+        <text text-anchor="middle">
+          <textPath href="#title-arc" startOffset="55%">Diane's File Fixer</textPath>
+        </text>
+      </svg>
+    </h1>
+
+    <input type="file" class="filepond" id="picker" multiple>
+  </div>
+
+<script>
+// ---------- Magic byte signatures ----------
+const SIGS = [
+  { ext: "jpg",  test: b => b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF },
+  { ext: "png",  test: b => b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 && b[4]===0x0D && b[5]===0x0A && b[6]===0x1A && b[7]===0x0A },
+  { ext: "gif",  test: b => b[0]===0x47 && b[1]===0x49 && b[2]===0x46 && b[3]===0x38 && (b[4]===0x37||b[4]===0x39) && b[5]===0x61 },
+  { ext: "webp", test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 && b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50 },
+  { ext: "bmp",  test: b => b[0]===0x42 && b[1]===0x4D },
+  { ext: "tiff", test: b => (b[0]===0x49 && b[1]===0x49 && b[2]===0x2A && b[3]===0x00) || (b[0]===0x4D && b[1]===0x4D && b[2]===0x00 && b[3]===0x2A) },
+  { ext: null,   test: b => b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70,
+    resolve: function(b) {
+      const brand = String.fromCharCode(b[8],b[9],b[10],b[11]).toLowerCase();
+      if (brand.startsWith("hei") || brand === "mif1" || brand === "msf1") return "heic";
+      if (brand.startsWith("qt"))   return "mov";
+      if (brand === "m4a ") return "m4a";
+      if (brand === "m4v ") return "m4v";
+      return "mp4";
+    }
+  },
+  { ext: "mp3",  test: b => (b[0]===0x49 && b[1]===0x44 && b[2]===0x33) || (b[0]===0xFF && (b[1]&0xE0)===0xE0) },
+  { ext: "wav",  test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 && b[8]===0x57 && b[9]===0x41 && b[10]===0x56 && b[11]===0x45 },
+  { ext: "flac", test: b => b[0]===0x66 && b[1]===0x4C && b[2]===0x61 && b[3]===0x43 },
+  { ext: "ogg",  test: b => b[0]===0x4F && b[1]===0x67 && b[2]===0x67 && b[3]===0x53 },
+  { ext: "aiff", test: b => b[0]===0x46 && b[1]===0x4F && b[2]===0x52 && b[3]===0x4D && b[8]===0x41 && b[9]===0x49 && b[10]===0x46 && b[11]===0x46 },
+  { ext: "pdf",  test: b => b[0]===0x25 && b[1]===0x50 && b[2]===0x44 && b[3]===0x46 },
+  { ext: "rtf",  test: b => b[0]===0x7B && b[1]===0x5C && b[2]===0x72 && b[3]===0x74 && b[4]===0x66 },
+  { ext: "doc",  test: b => b[0]===0xD0 && b[1]===0xCF && b[2]===0x11 && b[3]===0xE0 && b[4]===0xA1 && b[5]===0xB1 && b[6]===0x1A && b[7]===0xE1 },
+  { ext: null,   test: b => b[0]===0x50 && b[1]===0x4B && (b[2]===0x03 || b[2]===0x05 || b[2]===0x07),
+    resolve: function(b) {
+      const text = new TextDecoder("latin1").decode(b);
+      if (text.includes("word/"))  return "docx";
+      if (text.includes("xl/"))    return "xlsx";
+      if (text.includes("ppt/"))   return "pptx";
+      if (text.includes("META-INF/mozilla.rsa") || text.includes(".xpi")) return "xpi";
+      if (text.includes("mimetype") && text.includes("epub")) return "epub";
+      if (text.includes("AndroidManifest.xml")) return "apk";
+      return "zip";
+    }
+  },
+  { ext: "7z",   test: b => b[0]===0x37 && b[1]===0x7A && b[2]===0xBC && b[3]===0xAF && b[4]===0x27 && b[5]===0x1C },
+  { ext: "rar",  test: b => b[0]===0x52 && b[1]===0x61 && b[2]===0x72 && b[3]===0x21 && b[4]===0x1A && b[5]===0x07 },
+  { ext: "gz",   test: b => b[0]===0x1F && b[1]===0x8B },
+  { ext: "bz2",  test: b => b[0]===0x42 && b[1]===0x5A && b[2]===0x68 },
+  { ext: "xz",   test: b => b[0]===0xFD && b[1]===0x37 && b[2]===0x7A && b[3]===0x58 && b[4]===0x5A && b[5]===0x00 },
+  { ext: "sqlite", test: b => {
+      const s = "SQLite format 3";
+      for (let i=0;i<s.length;i++) if (b[i]!==s.charCodeAt(i)) return false;
+      return true;
+    }
+  },
+  { ext: "ico",  test: b => b[0]===0x00 && b[1]===0x00 && b[2]===0x01 && b[3]===0x00 },
+  { ext: "psd",  test: b => b[0]===0x38 && b[1]===0x42 && b[2]===0x50 && b[3]===0x53 },
+  { ext: "wasm", test: b => b[0]===0x00 && b[1]===0x61 && b[2]===0x73 && b[3]===0x6D },
+  { ext: "class",test: b => b[0]===0xCA && b[1]===0xFE && b[2]===0xBA && b[3]===0xBE },
+  { ext: "exe",  test: b => b[0]===0x4D && b[1]===0x5A },
+  { ext: "svg",  test: b => {
+      const s = new TextDecoder("utf-8").decode(b.slice(0, 512)).trim().toLowerCase();
+      return (s.startsWith("<?xml") && s.includes("<svg")) || s.startsWith("<svg");
+    }
+  },
+  { ext: "html", test: b => {
+      const s = new TextDecoder("utf-8").decode(b.slice(0, 512)).trim().toLowerCase();
+      return s.startsWith("<!doctype html") || s.startsWith("<html") || s.startsWith("<head") || s.startsWith("<body");
+    }
+  },
+  { ext: "xml",  test: b => {
+      const s = new TextDecoder("utf-8").decode(b.slice(0, 64)).trim().toLowerCase();
+      return s.startsWith("<?xml");
+    }
+  },
+];
+
+// ---------- Detection ----------
+async function detect(file) {
+  const slice = file.slice(0, 4096);
+  const buf = new Uint8Array(await slice.arrayBuffer());
+  for (const sig of SIGS) {
+    try {
+      if (sig.test(buf)) return sig.resolve ? sig.resolve(buf) : sig.ext;
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
+// ---------- DOM helpers ----------
+function currentExt(name) {
+  const i = name.lastIndexOf(".");
+  return i < 1 ? "" : name.slice(i+1).toLowerCase();
+}
+function stem(name) {
+  const i = name.lastIndexOf(".");
+  return i < 1 ? name : name.slice(0, i);
+}
+function normalize(ext) {
+  if (!ext) return ext;
+  const map = { jpeg: "jpg", tif: "tiff", htm: "html", mpeg: "mpg" };
+  return map[ext] || ext;
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// ---------- Batched processing ----------
+// FilePond fires onaddfile for each file individually. We batch them so the
+// status summary covers the whole drop instead of flickering per file.
+let batch = [];
+let batchTimer = null;
+let counts = { fixed: 0, same: 0, unknown: 0 };
+
+function queueFile(file) {
+  batch.push(file);
+  if (batchTimer) clearTimeout(batchTimer);
+  batchTimer = setTimeout(processBatch, 120);
+}
+
+let successTimer = null;
+function flashSuccess() {
+  const root = document.querySelector(".filepond--root");
+  if (!root) return;
+  root.classList.add("success");
+  if (successTimer) clearTimeout(successTimer);
+  successTimer = setTimeout(() => root.classList.remove("success"), 3000);
+}
+
+async function processBatch() {
+  const files = batch.splice(0);
+  counts = { fixed: 0, same: 0, unknown: 0 };
+
+  for (const file of files) {
+    let detected;
+    try { detected = await detect(file); } catch { detected = null; }
+    detected = normalize(detected);
+    const cur = normalize(currentExt(file.name));
+
+    if (!detected) { counts.unknown++; continue; }
+    if (cur === detected) { counts.same++; continue; }
+
+    const newName = `${stem(file.name)}_fixed.${detected}`;
+    try {
+      downloadBlob(file, newName);
+      counts.fixed++;
+    } catch {
+      counts.unknown++;
+    }
+    await new Promise(r => setTimeout(r, 80));
+  }
+
+  // Clear FilePond's view so the next drop is fresh
+  if (window._pond) window._pond.removeFiles();
+
+  // Flash the green tick for 3 seconds
+  flashSuccess();
+}
+
+// Expose for filepond-init.js
+window.queueFile = queueFile;
+window.flashSuccess = flashSuccess;
+
+// ---------- Tractor positioner ----------
+// Centers the phrase [tractor][space]Diane's File Fixer on the upper arc by
+// measuring the rendered text along the curved path. Must run after Orbitron
+// has loaded, otherwise getComputedTextLength returns 0.
+async function positionTractor() {
+  try { await document.fonts.ready; } catch {}
+  const path = document.getElementById("title-arc");
+  const textEl = document.querySelector(".h1-curve text");
+  const textPath = document.querySelector(".h1-curve textPath");
+  const tractor = document.querySelector(".h1-curve .tractor");
+  if (!path || !textEl || !textPath || !tractor) return;
+
+  const arcLen = path.getTotalLength();
+  const textLen = textEl.getComputedTextLength();
+  if (!textLen) return; // font failed; keep the hardcoded transform
+
+  // "Diane's File Fixer": index 7 is the space between "Diane's" and "File".
+  let spaceWidth = 8;
+  try {
+    const p7 = textEl.getStartPositionOfChar(7);
+    const p8 = textEl.getStartPositionOfChar(8);
+    spaceWidth = Math.hypot(p8.x - p7.x, p8.y - p7.y);
+  } catch {}
+
+  const tractorWidth = 38; // 40 user-unit artwork * scale(0.95)
+  const phraseLen = tractorWidth + spaceWidth + textLen;
+  const phraseStart = arcLen / 2 - phraseLen / 2;
+  const tractorMid = phraseStart + tractorWidth / 2;
+  const textStart = phraseStart + tractorWidth + spaceWidth;
+  const textMid = textStart + textLen / 2;
+
+  textPath.setAttribute("startOffset", String(textMid));
+
+  const p = path.getPointAtLength(tractorMid);
+  const pNext = path.getPointAtLength(Math.min(tractorMid + 1, arcLen));
+  const angleDeg = Math.atan2(pNext.y - p.y, pNext.x - p.x) * 180 / Math.PI;
+
+  // Push the tractor radially outward from the drop-zone center (260,260) so
+  // its wheels clear the dotted drop-zone rim.
+  const RADIAL_OFFSET = 8;
+  const nx = (p.x - 260) / 175;
+  const ny = (p.y - 260) / 175;
+  const tx = p.x + nx * RADIAL_OFFSET;
+  const ty = p.y + ny * RADIAL_OFFSET;
+
+  tractor.setAttribute(
+    "transform",
+    `translate(${tx} ${ty}) rotate(${angleDeg}) translate(-32 -32) scale(0.95)`
+  );
+}
+positionTractor();
+</script>
+<script src="filepond-init.js" defer></script>
+</body>
+</html>

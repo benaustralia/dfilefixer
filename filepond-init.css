@@ -1,0 +1,65 @@
+/* ---------- FilePond customization (circular) ---------- */
+.filepond--root {
+  margin: 0;
+  font-family: inherit;
+  width: 280px;
+  height: 280px;
+  flex-shrink: 0;
+  position: relative;
+}
+.filepond--panel-root {
+  background-color: transparent;
+  border: 2px dashed var(--border-strong);
+  border-radius: 50%;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+/* Stretch the drop label to fill the entire circular panel and center its content */
+.filepond--drop-label {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  color: var(--muted);
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.filepond--drop-label label {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: pointer;
+}
+.drop-icons {
+  position: relative;
+  width: 72px; height: 72px;
+  display: block;
+}
+.drop-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  color: var(--border-strong);
+  transition: color 200ms ease, opacity 250ms ease, transform 200ms ease;
+}
+.icon-success { color: #34c759; opacity: 0; transform: scale(0.6); }
+.filepond--root.success .icon-default { opacity: 0; transform: scale(0.6); }
+.filepond--root.success .icon-success { opacity: 1; transform: scale(1); }
+.filepond--root[data-hopper-state="drag-over"] .icon-default,
+.filepond--root.filepond--hopper-active .icon-default {
+  color: #34c759;
+  transform: translateY(-3px);
+}
+.filepond--root[data-hopper-state="drag-over"] .filepond--panel-root,
+.filepond--root.filepond--hopper-active .filepond--panel-root {
+  border-color: #34c759;
+  background-color: rgba(52,199,89,0.10);
+}
+.filepond--list-scroller { display: none; } /* no in-pond file list */
+.filepond--credits { display: none; }
