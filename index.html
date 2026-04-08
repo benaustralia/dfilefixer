@@ -162,6 +162,16 @@
   }
   .status.done { color: #2e8540; }
   .status.fail { color: #c41a10; }
+  /* Secondary hint shown under every red message. */
+  .status.fail::after {
+    content: "try once more";
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    opacity: 0.75;
+  }
 </style>
 </head>
 <body>
@@ -344,7 +354,7 @@ window.queueFile = function (file) {
 const FAIL_MESSAGES = {
   unreadable: "could not read file",
   empty:      "file is empty",
-  corrupt:    "unknown format — possibly corrupt",
+  corrupt:    "unknown format",
   text:       "looks like plain text",
 };
 const FAIL_SEVERITY = ["unreadable", "empty", "corrupt", "text"];
