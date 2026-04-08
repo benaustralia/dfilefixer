@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#e02418">
+<meta name="description" content="Diane's File Fixer restores missing or wrong file extensions by inspecting file contents — runs entirely in your browser, no upload, no server.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -11,52 +12,43 @@
 <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 <title>Diane's File Fixer</title>
 
-<!-- FilePond: professional drop zone component -->
-<link rel="stylesheet" href="https://unpkg.com/filepond@^4/dist/filepond.min.css">
-<link rel="stylesheet" href="filepond-init.css">
-<script src="https://unpkg.com/filepond@^4/dist/filepond.min.js"></script>
+<!-- Self-hosted FilePond (PQINA, MIT, v4.32.12) — CSS loaded async so it doesn't
+     block render of the card + title. JS is deferred. -->
+<link rel="preload" as="style" href="vendor/filepond.min.css" onload="this.rel='stylesheet'">
+<link rel="preload" as="style" href="filepond-init.css"       onload="this.rel='stylesheet'">
+<noscript>
+  <link rel="stylesheet" href="vendor/filepond.min.css">
+  <link rel="stylesheet" href="filepond-init.css">
+</noscript>
+<script defer src="vendor/filepond.min.js"></script>
+<script defer src="filepond-init.js"></script>
 
-<!-- Futuristic display font -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap">
+<!-- Self-hosted Orbitron subset for curved title. Swap-displayed so no FOIT. -->
+<style>
+  @font-face {
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 500 900;
+    font-display: swap;
+    src: url("vendor/orbitron.woff2") format("woff2");
+  }
+</style>
 
 <style>
   :root {
     --card: min(520px, 92vmin);
-    --bg: #0f1115;
-    --panel: rgba(255,255,255,0.04);
-    --border: rgba(255,255,255,0.14);
-    --border-strong: rgba(255,255,255,0.32);
-    --accent: #e02418;
-    --accent-soft: rgba(224,36,24,0.10);
-    --text: #f3f5f8;
-    --muted: #9aa3b2;
-    --green: #34c759;
-    --orange: #ff9f0a;
-    --red: #ff453a;
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f7f8fa;
-      --panel: rgba(0,0,0,0.03);
-      --border: rgba(0,0,0,0.12);
-      --border-strong: rgba(0,0,0,0.32);
-      --text: #0f1115;
-      --muted: #5b6472;
-    }
+    /* Mid-gray for the dashed drop-zone ring + default drop-icon; must show on the white card. */
+    --border-strong: rgba(15,17,21,0.28);
+    --muted: #5b6472;
   }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; min-height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-  }
+  html, body { margin: 0; padding: 0; }
   body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    color: #f3f5f8;
+    -webkit-font-smoothing: antialiased;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    position: relative;
     min-height: 100vh;
     background-color: #000;
     background-image: radial-gradient(circle at center,
@@ -111,14 +103,12 @@
     background: rgba(255,255,255,0.92);
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 50%;
-    padding: 0;
     backdrop-filter: blur(24px) saturate(140%);
     -webkit-backdrop-filter: blur(24px) saturate(140%);
     box-shadow: 0 20px 80px -10px rgba(0,0,0,0.7),
                 0 0 0 1px rgba(255,255,255,0.05) inset;
     color: #0f1115;
     overflow: hidden;
-    /* Geometric centering: drop zone sits at the exact center of the circle */
   }
   /* Both the H1 and the drop zone are absolutely centered on the card.
      The H1 SVG is the same size as the card and contains a half-circle arc
@@ -154,12 +144,30 @@
     fill: #0f1115;
     letter-spacing: 0.5px;
   }
+  /* Feedback text below the drop zone, inside the circular card. */
+  .status {
+    position: absolute;
+    left: 50%;
+    top: 78%;
+    transform: translateX(-50%);
+    font-family: "Orbitron", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: transparent;
+    transition: color 250ms ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .status.done { color: #2e8540; }
+  .status.fail { color: #c41a10; }
 </style>
 </head>
 <body>
   <a class="credit" href="https://www.svgbackgrounds.com/" target="_blank" rel="noopener">Bullseye Gradient by SVGBackgrounds.com</a>
 
-  <div class="card">
+  <main class="card">
     <h1>
       <svg class="h1-curve" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg" aria-label="Diane's File Fixer">
         <defs>
@@ -194,8 +202,9 @@
       </svg>
     </h1>
 
-    <input type="file" class="filepond" id="picker" multiple>
-  </div>
+    <input type="file" class="filepond" id="picker" aria-label="Choose files to fix" multiple>
+    <div class="status" role="status" aria-live="polite"></div>
+  </main>
 
 <script>
 // ---------- Magic byte signatures ----------
@@ -270,15 +279,30 @@ const SIGS = [
 ];
 
 // ---------- Detection ----------
+// Returns { ext, buf }. `ext` is the detected extension or null if no
+// signature matched. `buf` is the first 4 KB so callers can further classify
+// a null match (empty / plain-text / unknown binary).
 async function detect(file) {
-  const slice = file.slice(0, 4096);
-  const buf = new Uint8Array(await slice.arrayBuffer());
+  const buf = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
   for (const sig of SIGS) {
     try {
-      if (sig.test(buf)) return sig.resolve ? sig.resolve(buf) : sig.ext;
+      if (sig.test(buf)) return { ext: sig.resolve ? sig.resolve(buf) : sig.ext, buf };
     } catch { /* ignore */ }
   }
-  return null;
+  return { ext: null, buf };
+}
+
+// Heuristic: is the sample mostly printable ASCII (tab/LF/CR + 0x20–0x7e)?
+// Anything over 90% is almost always a plain-text file of some kind.
+function looksLikeText(buf) {
+  if (buf.length === 0) return false;
+  const n = Math.min(buf.length, 512);
+  let printable = 0;
+  for (let i = 0; i < n; i++) {
+    const b = buf[i];
+    if (b === 9 || b === 10 || b === 13 || (b >= 0x20 && b <= 0x7e)) printable++;
+  }
+  return printable / n > 0.9;
 }
 
 // ---------- DOM helpers ----------
@@ -304,61 +328,73 @@ function downloadBlob(blob, filename) {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-// ---------- Batched processing ----------
-// FilePond fires onaddfile for each file individually. We batch them so the
-// status summary covers the whole drop instead of flickering per file.
-let batch = [];
-let batchTimer = null;
-let counts = { fixed: 0, same: 0, unknown: 0 };
+// FilePond fires onaddfile for each file individually; batch them so the
+// success flash covers the whole drop instead of retriggering per file.
+const batch = [];
+let batchTimer = null, successTimer = null;
 
-function queueFile(file) {
+window.queueFile = function (file) {
   batch.push(file);
-  if (batchTimer) clearTimeout(batchTimer);
+  clearTimeout(batchTimer);
   batchTimer = setTimeout(processBatch, 120);
-}
+};
 
-let successTimer = null;
-function flashSuccess() {
-  const root = document.querySelector(".filepond--root");
-  if (!root) return;
-  root.classList.add("success");
-  if (successTimer) clearTimeout(successTimer);
-  successTimer = setTimeout(() => root.classList.remove("success"), 3000);
-}
+// Failure taxonomy. Severity order = the order we prefer to surface a mixed
+// batch's problem; a worse issue in any one file overrides a milder one.
+const FAIL_MESSAGES = {
+  unreadable: "could not read file",
+  empty:      "file is empty",
+  corrupt:    "unknown format — possibly corrupt",
+  text:       "looks like plain text",
+};
+const FAIL_SEVERITY = ["unreadable", "empty", "corrupt", "text"];
 
 async function processBatch() {
   const files = batch.splice(0);
-  counts = { fixed: 0, same: 0, unknown: 0 };
+  let fixedCount = 0;
+  let failReason = null;
+  const raise = r => {
+    if (!failReason || FAIL_SEVERITY.indexOf(r) < FAIL_SEVERITY.indexOf(failReason)) {
+      failReason = r;
+    }
+  };
 
   for (const file of files) {
-    let detected;
-    try { detected = await detect(file); } catch { detected = null; }
-    detected = normalize(detected);
-    const cur = normalize(currentExt(file.name));
+    if (file.size === 0) { raise("empty"); continue; }
+    let result;
+    try { result = await detect(file); }
+    catch { raise("unreadable"); continue; }
 
-    if (!detected) { counts.unknown++; continue; }
-    if (cur === detected) { counts.same++; continue; }
-
-    const newName = `${stem(file.name)}_fixed.${detected}`;
-    try {
-      downloadBlob(file, newName);
-      counts.fixed++;
-    } catch {
-      counts.unknown++;
+    const detected = normalize(result.ext);
+    if (!detected) {
+      raise(looksLikeText(result.buf) ? "text" : "corrupt");
+      continue;
     }
-    await new Promise(r => setTimeout(r, 80));
+    if (normalize(currentExt(file.name)) !== detected) {
+      downloadBlob(file, `${stem(file.name)}_fixed.${detected}`);
+      fixedCount++;
+      await new Promise(r => setTimeout(r, 80));
+    }
   }
+  window._pond?.removeFiles();
 
-  // Clear FilePond's view so the next drop is fresh
-  if (window._pond) window._pond.removeFiles();
-
-  // Flash the green tick for 3 seconds
-  flashSuccess();
+  // Success wins if anything was fixed OR every file already had the right ext.
+  const root = document.querySelector(".filepond--root");
+  const status = document.querySelector(".status");
+  if (fixedCount > 0 || !failReason) {
+    status.textContent = "done";
+    status.className = "status done";
+    root.classList.add("success");
+  } else {
+    status.textContent = FAIL_MESSAGES[failReason];
+    status.className = "status fail";
+  }
+  clearTimeout(successTimer);
+  successTimer = setTimeout(() => {
+    root.classList.remove("success");
+    status.className = "status";
+  }, 3000);
 }
-
-// Expose for filepond-init.js
-window.queueFile = queueFile;
-window.flashSuccess = flashSuccess;
 
 // Center [tractor][space]Diane's File Fixer on the upper arc after Orbitron
 // loads, then push the tractor 8 user-units radially outward (arc radius 175,
@@ -387,6 +423,5 @@ document.fonts.ready.then(() => {
     "transform", `translate(${x} ${y}) rotate(${angle}) translate(-32 -32) scale(0.95)`);
 });
 </script>
-<script src="filepond-init.js" defer></script>
 </body>
 </html>

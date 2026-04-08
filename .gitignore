@@ -4,6 +4,9 @@
 viewport-*.png
 tractor-*.png
 standalone-*.png
+after-*.png
+dropzone-*.png
+status-*.png
 
 # Local Netlify folder
 .netlify
