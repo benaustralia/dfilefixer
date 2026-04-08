@@ -144,7 +144,10 @@
     fill: #0f1115;
     letter-spacing: 0.5px;
   }
-  /* Feedback text below the drop zone, inside the circular card. */
+  /* Feedback text below the drop zone, inside the circular card.
+     Both the primary message and the ::after hint are centered on the
+     same vertical axis — text-align on the .status box plus left:50% /
+     translateX(-50%) anchors the box centrally under the drop zone. */
   .status {
     position: absolute;
     left: 50%;
@@ -154,7 +157,7 @@
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    text-transform: lowercase;
+    text-align: center;
     color: transparent;
     transition: color 250ms ease;
     pointer-events: none;
@@ -164,7 +167,7 @@
   .status.fail { color: #c41a10; }
   /* Secondary hint shown under every red message. */
   .status.fail::after {
-    content: "try once more";
+    content: "Try once more?";
     display: block;
     margin-top: 3px;
     font-size: 12px;
